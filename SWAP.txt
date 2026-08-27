@@ -1,0 +1,6 @@
+ {Array.from({length : 3}).map((_, index) => (
+                <div>
+                    <Square/>
+                    <Square/>
+                    <Square/>
+                </div>))}
