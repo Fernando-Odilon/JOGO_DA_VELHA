@@ -1,7 +1,7 @@
 import { GoogleGenAI } from '@google/genai';
 import { useState, useEffect, use } from 'react';
 
-const IA = new GoogleGenAI({ apiKey: 'AQ.Ab8RN6L1iA491n-sdP1D2RrETUsLCdp43-vpvTQByu8wYUBwkA' });
+const IA = new GoogleGenAI({ apiKey: '' });
 
 
 
