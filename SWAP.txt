@@ -4,3 +4,103 @@
                     <Square/>
                     <Square/>
                 </div>))}
+
+
+
+
+IA:
+
+
+import Square from "../Square/Square";
+import Bot from "../BotTicTacToe/BotTicTacToe";
+import { useEffect, useState  } from "react";
+import { GoogleGenAI } from '@google/genai';
+
+
+function Board({ xIsNext, squares, onPlay, calculateWinner, lines }) {
+    const IA = new GoogleGenAI({ apiKey: 'AQ.Ab8RN6KpDVAdlBR6kfabJ-81X4l04EIlKmu4l30pdz4L13tRjg' });
+    
+    const [resposta, setResposta] = useState('Pensando...')
+    
+        
+        async function getResponse(squares, lines) {
+            const prompt = `
+      Você é um jogador experiente de jogo da velha e está jogando com a pecinha 'O'.
+      O estado atual do tabuleiro (posições de 0 a 8) é: [${squares}].
+      Onde estiver 'null', a posição está livre. Você teve fazer uma linha sequêncial de 3 peças iguais sua, horizontal, vertical, e diagonal. 
+      Ao mesmo tempo você deve impedir que o adversário vença,  bloqueando as possíveis combinações que ele pode fazer.
+      As possibilidades de vitória são respresentados pelo array: ${lines}
+      
+      Escolha a melhor posição para jogar e retorne APENAS o número da posição (de 0 a 8).
+      Não escreva nenhuma palavra, explicação ou texto adicional. Responda apenas com o número.
+      `;
+        try {
+            const response = await IA.models.generateContent({
+              model: 'gemini-3.6-flash',
+              contents: prompt,
+            });
+            // Extrai apenas o texto retornado e salva no estado
+            setResposta(response.text.trim());
+          } catch (error) {
+            console.error('Erro na requisição:', error);
+            setResposta('Erro');
+          }
+        }
+      
+        useEffect(() => {
+          getResponse(squares, lines);
+        }, []);
+
+        console.log(resposta)
+
+    function handleClick(i) {
+      if (calculateWinner(squares) || squares[i]) {
+        return;
+      }
+      const nextSquares = squares.slice();
+      console.log(xIsNext)
+      if (xIsNext) {
+        nextSquares[i] = 'X';
+      } else {
+        nextSquares[resposta] = 'O';
+      }
+      onPlay(nextSquares);
+    }
+    
+    
+    const winner = calculateWinner(squares);
+    let status;
+    if (winner) {
+      status = 'Winner: ' + winner;
+    } else {
+        squares.map((square) => {
+        if (square !== null) status = 'Empate'
+        else status = 'Next player: ' + (xIsNext ? 'X' : 'O');})
+      
+    }
+  
+    return (
+      <>
+        <div className="status">{status}</div>
+        <div className="board-row">
+          <Square value={squares[0]} onSquareClick={() => handleClick(0)}  botResponse = {Bot}/>
+          <Square value={squares[1]} onSquareClick={() => handleClick(1)} />
+          <Square value={squares[2]} onSquareClick={() => handleClick(2)} />
+        </div>
+        <div className="board-row">
+          <Square value={squares[3]} onSquareClick={() => handleClick(3)} />
+          <Square value={squares[4]} onSquareClick={() => handleClick(4)} />
+          <Square value={squares[5]} onSquareClick={() => handleClick(5)} />
+        </div>
+        <div className="board-row">
+          <Square value={squares[6]} onSquareClick={() => handleClick(6)} />
+          <Square value={squares[7]} onSquareClick={() => handleClick(7)} />
+          <Square value={squares[8]} onSquareClick={() => handleClick(8)} />
+        </div>
+      </>
+    );
+  }
+
+  
+
+  export default Board
