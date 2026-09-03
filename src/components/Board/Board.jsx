@@ -1,22 +1,19 @@
 import Square from "../Square/Square";
-import { GoogleGenAI } from '@google/genai';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
-// Inicializa a IA fora do componente para evitar recriação a cada render
-const ai = new GoogleGenAI({ apiKey: 'AQ.Ab8RN6JSZDStW8YMJy-5Mex_OX7XtlAwQoSyvpm5Ugm2QBGJfQ' });
 
-// Função normal assíncrona (fora do componente)
 const getResponse = async (squares, setPensando, setResposta) => {
   setPensando(true);
+  setResposta('Pensando...');
 
   const lines = [
-    [0, 1, 2],
-    [3, 4, 5],
+    [0, 1, 2], 
+    [3, 4, 5], 
     [6, 7, 8],
-    [0, 3, 6],
-    [1, 4, 7],
+    [0, 3, 6], 
+    [1, 4, 7], 
     [2, 5, 8],
-    [0, 4, 8],
+    [0, 4, 8], 
     [2, 4, 6],
   ];
 
@@ -31,17 +28,32 @@ const getResponse = async (squares, setPensando, setResposta) => {
   `;
 
   try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-3.6-flash',
-      contents: prompt,
+    const response = await fetch('http://localhost:11434/api/generate', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'llama3.2:1b',
+        prompt: prompt,
+        stream: false,
+      }),
     });
-    const respostaIA = response.text.trim();
-    setResposta(respostaIA);
-    console.log(respostaIA)
+
+    const dados = await response.json();
+    const respostaIA = parseInt(dados.response.trim(), 10);
+
+    if (!isNaN(respostaIA) && respostaIA >= 0 && respostaIA <= 8) {
+      setResposta(`IA jogou na posição ${respostaIA}`);
+      return respostaIA;
+    }
+
+    setResposta('Resposta inválida da IA');
+    return null;
 
   } catch (error) {
     console.error('Erro na requisição:', error);
-    setResposta('Erro na requisição');
+    setResposta('Erro ao conectar');
     return null;
 
   } finally {
@@ -61,26 +73,22 @@ function Board({ xIsNext, squares, onPlay, calculateWinner }) {
       return;
     }
 
-    // Jogada do Humano ('X')
     const nextSquares = squares.slice();
     nextSquares[i] = 'X';
     onPlay(nextSquares);
     setVezHumano(false);
 
-    // Verifica se o jogo acabou antes da IA jogar
     if (calculateWinner(nextSquares) || nextSquares.every((square) => square !== null)) {
       return;
     }
-
-    // Turno da IA ('O')
     const movimentoBot = await getResponse(nextSquares, setPensando, setResposta);
-    
     if (movimentoBot !== null && !nextSquares[movimentoBot]) {
-      console.log(movimentoBot)
       const jogadaFinalIA = nextSquares.slice();
       jogadaFinalIA[movimentoBot] = 'O';
-      console.log(jogadaFinalIA)
       onPlay(jogadaFinalIA);
+    }
+    else {
+      handleClick(i)
     }
     
     setVezHumano(true);
