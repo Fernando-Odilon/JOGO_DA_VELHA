@@ -1,7 +1,6 @@
 import Square from "../Square/Square";
 import { useState } from 'react';
 
-
 const getResponse = async (squares, setPensando, setResposta) => {
   setPensando(true);
   setResposta('Pensando...');
@@ -18,30 +17,35 @@ const getResponse = async (squares, setPensando, setResposta) => {
   ];
 
   const prompt = `
-  Você é um jogador experiente de jogo da velha e está jogando com a pecinha 'O'.
-  O estado atual do tabuleiro (posições de 0 a 8) é: [${squares}].
-  Onde estiver 'null', a posição está livre.
-  As possibilidades de vitória são: ${lines}
-  
-  Escolha a melhor posição para jogar e retorne APENAS o número da posição (de 0 a 8).
-  Não escreva nenhuma palavra, explicação ou texto adicional. Responda apenas com o número.
-  `;
+ Você é uma IA jogando jogo da velha como 'O'. O tabuleiro é um array de 9 posições (0 a 8). Posições null estão vazias. 'X' é o oponente. 'O' é você.
+Tabuleiro atual: ${JSON.stringify(squares)}
+Retorne APENAS o número do índice (0 a 8) onde você quer jogar. Não retorne texto, não retorne JSON, apenas o número.`;
 
   try {
-    const response = await fetch('http://localhost:11434/api/generate', {
+    // Endpoint compatível com OpenAI fornecido pela DashScope para o Qwen
+    const response = await fetch('https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer sk-ws-H.DDILPLE.vGbN.MEYCIQDbc7avHatfa8zXsd5EUoeLdhEHWItARoSzid6Opkc_8AIhALrIwfzK3a8VXe2bte340isRrDaeQKdJUIdhaOqnCxmL`,
       },
       body: JSON.stringify({
-        model: 'llama3.2:1b',
-        prompt: prompt,
-        stream: false,
+        model: 'qwen-turbo',
+        messages: [
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        temperature: 0.1,
       }),
     });
 
     const dados = await response.json();
-    const respostaIA = parseInt(dados.response.trim(), 10);
+    
+    // Extrai a resposta do formato compatível
+    const textoResposta = dados.choices?.[0]?.message?.content || '';
+    const respostaIA = parseInt(textoResposta.trim(), 10);
 
     if (!isNaN(respostaIA) && respostaIA >= 0 && respostaIA <= 8) {
       setResposta(`IA jogou na posição ${respostaIA}`);
@@ -79,16 +83,18 @@ function Board({ xIsNext, squares, onPlay, calculateWinner }) {
     setVezHumano(false);
 
     if (calculateWinner(nextSquares) || nextSquares.every((square) => square !== null)) {
+      setVezHumano(true);
       return;
     }
+    
     const movimentoBot = await getResponse(nextSquares, setPensando, setResposta);
+    console.log(movimentoBot)
     if (movimentoBot !== null && !nextSquares[movimentoBot]) {
       const jogadaFinalIA = nextSquares.slice();
       jogadaFinalIA[movimentoBot] = 'O';
       onPlay(jogadaFinalIA);
-    }
-    else {
-      handleClick(i)
+    } else {
+      setResposta('Erro na jogada da IA, tente novamente');
     }
     
     setVezHumano(true);
