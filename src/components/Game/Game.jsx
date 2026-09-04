@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import Board from "../Board/Board";
+import styles from './Game.module.css'
+
 
 export default function Game() {
     const [history, setHistory] = useState([Array(9).fill(null)]);
@@ -48,7 +50,7 @@ export default function Game() {
       }
       
     return (
-      <div className="game">
+      <div className={styles.game}>
         <div className="game-board">
           <Board xIsNext={xIsNext} squares={currentSquares} onPlay={handlePlay} calculateWinner={calculateWinner} lines = {lines}/>
         </div>
