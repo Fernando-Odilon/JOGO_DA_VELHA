@@ -1,76 +1,107 @@
 import Square from "../Square/Square";
 import { useState } from 'react';
 
-const getResponse = async (squares, setPensando, setResposta) => {
+
+
+
+const getResponse = async (currentSquares, setPensando, setResposta) => {
   setPensando(true);
   setResposta('Pensando...');
 
-  const lines = [
-    [0, 1, 2], 
-    [3, 4, 5], 
-    [6, 7, 8],
-    [0, 3, 6], 
-    [1, 4, 7], 
-    [2, 5, 8],
-    [0, 4, 8], 
-    [2, 4, 6],
-  ];
+  // Mapeia o tabuleiro visualmente para o Gemini entender a geometria
+  const tabuleiroVisual = `
+  0 | 1 | 2  -> ${currentSquares[0] || '[ ]'} | ${currentSquares[1] || '[ ]'} | ${currentSquares[2] || '[ ]'}
+  ---------
+  3 | 4 | 5  -> ${currentSquares[3] || '[ ]'} | ${currentSquares[4] || '[ ]'} | ${currentSquares[5] || '[ ]'}
+  ---------
+  6 | 7 | 8  -> ${currentSquares[6] || '[ ]'} | ${currentSquares[7] || '[ ]'} | ${currentSquares[8] || '[ ]'}
+  `;
 
-  const prompt = `
- Você é uma IA jogando jogo da velha como 'O'. O tabuleiro é um array de 9 posições (0 a 8). Posições null estão vazias. 'X' é o oponente. 'O' é você.
-Tabuleiro atual: ${JSON.stringify(squares)}
-Retorne APENAS o número do índice (0 a 8) onde você quer jogar. Não retorne texto, não retorne JSON, apenas o número.`;
+  const posicoesVazias = currentSquares
+    .map((v, i) => (v === null ? i : null))
+    .filter((v) => v !== null);
+
+  const prompt = `Você é uma IA especialista jogando Jogo da Velha como 'O'. O oponente é 'X'.
+Analise o tabuleiro abaixo onde '[ ]' representa posições vazias, 'X' o oponente e 'O' você:
+
+${tabuleiroVisual}
+
+As únicas posições numéricas disponíveis para jogar são: ${JSON.stringify(posicoesVazias)}.
+
+Instruções obrigatórias:
+1. Analise se o oponente 'X' está prestes a vencer (tem 2 em linha) para bloqueá-lo.
+2. Analise se você 'O' pode vencer na próxima jogada.
+3. Escolha obrigatoriamente um índice numérico da lista de posições disponíveis.
+
+Responda EXATAMENTE com um objeto JSON puro contendo apenas a chave "jogada" com o número do índice escolhido, por exemplo: {"jogada": 4}`;
 
   try {
-    // Endpoint compatível com OpenAI fornecido pela DashScope para o Qwen
-    const response = await fetch('https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions', {
+    // Chave de API gerada gratuitamente no Google AI Studio
+    const apiKey = 'AQ.Ab8RN6JzA8v78WMDPH_9jQYXOmYRHxuw6aviJGWeidTJx7LVgQ';
+    const url = `https://generativelanguage.googleapis.com/v1/models/gemini-3.6-flash:generateContent?key=${apiKey}`;
+
+    const response = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer sk-ws-H.DDILPLE.vGbN.MEYCIQDbc7avHatfa8zXsd5EUoeLdhEHWItARoSzid6Opkc_8AIhALrIwfzK3a8VXe2bte340isRrDaeQKdJUIdhaOqnCxmL`,
       },
       body: JSON.stringify({
-        model: 'qwen-turbo',
-        messages: [
+        contents: [
           {
-            role: 'user',
-            content: prompt
+            parts: [
+              { text: prompt }
+            ]
           }
         ],
-        temperature: 0.1,
+        generationConfig: {
+          temperature: 0.2, // Mantém a criatividade baixa para focar na lógica do jogo
+          responseMimeType: "application/json" // Força o Gemini a responder estritamente em JSON válido
+        }
       }),
     });
 
     const dados = await response.json();
     
-    // Extrai a resposta do formato compatível
-    const textoResposta = dados.choices?.[0]?.message?.content || '';
-    const respostaIA = parseInt(textoResposta.trim(), 10);
+    // Extrai o texto da resposta do Gemini
+    const textoResposta = dados.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    
+    let respostaIA = null;
+    try {
+      const objResposta = JSON.parse(textoResposta);
+      respostaIA = parseInt(objResposta.jogada, 10);
+    } catch (e) {
+      // Fallback extra caso venha fora do formato esperado
+      const match = textoResposta.match(/\d/);
+      if (match) respostaIA = parseInt(match[0], 10);
+    }
 
-    if (!isNaN(respostaIA) && respostaIA >= 0 && respostaIA <= 8) {
+    if (!isNaN(respostaIA) && posicoesVazias.includes(respostaIA)) {
       setResposta(`IA jogou na posição ${respostaIA}`);
       return respostaIA;
     }
 
-    setResposta('Resposta inválida da IA');
-    return null;
+    // Fallback de segurança se a resposta falhar
+    const fallback = posicoesVazias[0];
+    setResposta(`IA jogou na posição ${fallback}`);
+    return fallback;
 
   } catch (error) {
-    console.error('Erro na requisição:', error);
+    console.error('Erro na requisição ao Gemini:', error);
     setResposta('Erro ao conectar');
     return null;
-
   } finally {
     setPensando(false);
   }
 };
 
 function Board({ xIsNext, squares, onPlay, calculateWinner }) {
+  const [isPlayrxPlayer, setIsPlayerxPlayer] = useState(null)
   const [pensando, setPensando] = useState(false);
   const [resposta, setResposta] = useState('Aguardando jogada...');
   const [vezHumano, setVezHumano] = useState(true);
 
   async function handleClick(i) {
+   if (!isPlayrxPlayer) {
     if (!vezHumano || pensando) return;
     
     if (calculateWinner(squares) || squares[i]) {
@@ -86,7 +117,7 @@ function Board({ xIsNext, squares, onPlay, calculateWinner }) {
       setVezHumano(true);
       return;
     }
-    
+
     const movimentoBot = await getResponse(nextSquares, setPensando, setResposta);
     console.log(movimentoBot)
     if (movimentoBot !== null && !nextSquares[movimentoBot]) {
@@ -97,8 +128,24 @@ function Board({ xIsNext, squares, onPlay, calculateWinner }) {
       setResposta('Erro na jogada da IA, tente novamente');
     }
     
-    setVezHumano(true);
+    setVezHumano(true);}
+  
+
+    else {
+    if (calculateWinner(squares) || squares[i]) {
+      return;
+    }
+    const nextSquares = squares.slice();
+    if (xIsNext) {
+      nextSquares[i] = 'X';
+    } else {
+      nextSquares[i] = 'O';
+    }
+    onPlay(nextSquares);
   }
+  
+  }
+  
 
   const winner = calculateWinner(squares);
   const isDraw = squares.every((square) => square !== null);
@@ -113,8 +160,11 @@ function Board({ xIsNext, squares, onPlay, calculateWinner }) {
   }
 
   return (
-    <>
-      <div className="status">{status}</div>
+    <>  <button onClick={() => setIsPlayerxPlayer(false)} >JOGAR CONTRA IA</button>
+        <button onClick={() => setIsPlayerxPlayer(true)}>JOGAR CONTRA PLAYER</button>
+      {isPlayrxPlayer !== null && (
+        <div className='teste'>
+        <div className="status">{status}</div>
       <p>Status da IA: {resposta}</p>
       <div className="board-row">
         <Square value={squares[0]} onSquareClick={() => handleClick(0)} />
@@ -131,6 +181,10 @@ function Board({ xIsNext, squares, onPlay, calculateWinner }) {
         <Square value={squares[7]} onSquareClick={() => handleClick(7)} />
         <Square value={squares[8]} onSquareClick={() => handleClick(8)} />
       </div>
+  </div>
+      )
+      }  
+      
     </>
   );
 }
