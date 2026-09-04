@@ -1,14 +1,41 @@
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
+.game {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 40px;
+  font-family: sans-serif;
+  margin-top: 40px;
 }
 
-.game {
-    width: 100vw;
-    height: 100vh;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    flex-direction: column;
+.gameInfo {
+  margin-left: 20px;
+}
+
+.gameInfo ol {
+  padding-left: 20px;
+  margin: 0 0 20px 0;
+}
+
+.gameInfo li {
+  margin-bottom: 6px;
+}
+
+.gameInfo button,
+.resetGame button {
+  padding: 6px 12px;
+  background-color: #f0f0f0;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.gameInfo button:hover,
+.resetGame button:hover {
+  background-color: #e0e0e0;
+}
+
+.resetGame {
+  margin-top: 15px;
 }

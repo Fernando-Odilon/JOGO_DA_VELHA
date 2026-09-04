@@ -1,7 +1,6 @@
 import Square from "../Square/Square";
 import { useState } from 'react';
-
-
+import styles from './Board.module.css'
 
 
 const getResponse = async (currentSquares, setPensando, setResposta) => {
@@ -37,7 +36,7 @@ Responda EXATAMENTE com um objeto JSON puro contendo apenas a chave "jogada" com
 
   try {
     // Chave de API gerada gratuitamente no Google AI Studio
-    const apiKey = 'AQ.Ab8RN6JzA8v78WMDPH_9jQYXOmYRHxuw6aviJGWeidTJx7LVgQ';
+    const apiKey = 'AQ.Ab8RN6IfJkpxSF9u0_wxNUq3s1zlemi27I4C2Ga0dKVy-fn6wg';
     const url = `https://generativelanguage.googleapis.com/v1/models/gemini-3.6-flash:generateContent?key=${apiKey}`;
 
     const response = await fetch(url, {
@@ -163,25 +162,25 @@ function Board({ xIsNext, squares, onPlay, calculateWinner }) {
     <>  <button onClick={() => setIsPlayerxPlayer(false)} >JOGAR CONTRA IA</button>
         <button onClick={() => setIsPlayerxPlayer(true)}>JOGAR CONTRA PLAYER</button>
       {isPlayrxPlayer !== null && (
-        <div className='teste'>
-        <div className="status">{status}</div>
-      <p>Status da IA: {resposta}</p>
-      <div className="board-row">
-        <Square value={squares[0]} onSquareClick={() => handleClick(0)} />
-        <Square value={squares[1]} onSquareClick={() => handleClick(1)} />
-        <Square value={squares[2]} onSquareClick={() => handleClick(2)} />
+        <>
+        <div className={styles.status}>{status}</div>
+      <p>Status da IA: {isPlayrxPlayer ? 'Modo Jogador x Jogador' : resposta }</p>
+      <div className={styles.boardRow}>
+        <Square className={styles.square} value={squares[0]} onSquareClick={() => handleClick(0)} />
+        <Square className={styles.square} value={squares[1]} onSquareClick={() => handleClick(1)} />
+        <Square className={styles.square} value={squares[2]} onSquareClick={() => handleClick(2)} />
       </div>
-      <div className="board-row">
-        <Square value={squares[3]} onSquareClick={() => handleClick(3)} />
-        <Square value={squares[4]} onSquareClick={() => handleClick(4)} />
-        <Square value={squares[5]} onSquareClick={() => handleClick(5)} />
+      <div className={styles.boardRow}>
+        <Square className={styles.square} value={squares[3]} onSquareClick={() => handleClick(3)} />
+        <Square className={styles.square} value={squares[4]} onSquareClick={() => handleClick(4)} />
+        <Square className={styles.square} value={squares[5]} onSquareClick={() => handleClick(5)} />
       </div>
-      <div className="board-row">
-        <Square value={squares[6]} onSquareClick={() => handleClick(6)} />
-        <Square value={squares[7]} onSquareClick={() => handleClick(7)} />
-        <Square value={squares[8]} onSquareClick={() => handleClick(8)} />
+      <div className={styles.boardRow}>
+        <Square className={styles.square} value={squares[6]} onSquareClick={() => handleClick(6)} />
+        <Square className={styles.square} value={squares[7]} onSquareClick={() => handleClick(7)} />
+        <Square className={styles.square} value={squares[8]} onSquareClick={() => handleClick(8)} />
       </div>
-  </div>
+        </>
       )
       }  
       

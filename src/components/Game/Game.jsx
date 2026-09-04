@@ -51,7 +51,7 @@ export default function Game() {
       
     return (
       <div className={styles.game}>
-        <div className="game-board">
+        <div className={styles.gameInfo}>
           <Board xIsNext={xIsNext} squares={currentSquares} onPlay={handlePlay} calculateWinner={calculateWinner} lines = {lines}/>
         </div>
         <div className="game-info">
